@@ -1,0 +1,20 @@
+#!/bin/bash
+#./verify
+#
+#Copyright 2013 Daniel Nikpayuk
+#
+#This file is part of Chain-Scripting-Technology.
+#
+#Chain-Scripting-Technology is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#Chain-Scripting-Technology is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+#of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with Chain-Scripting-Technology. If not, see
+#<http://www.gnu.org/licenses/>.
+
+VERLOG="verify.log"
+
+echo "No automated verification was done during the execution of this script." > "$VERLOG"
+

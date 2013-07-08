@@ -1,0 +1,149 @@
+#!/bin/bash
+#./chain-scripter
+#
+#Copyright 2013 Daniel Nikpayuk
+#
+#This file is part of Chain-Scripting-Technology.
+#
+#Chain-Scripting-Technology is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#Chain-Scripting-Technology is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+#of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with Chain-Scripting-Technology. If not, see
+#<http://www.gnu.org/licenses/>.
+
+SUCCESS_STATUS=0
+FAIL_STATUS=1
+
+HOMEDIR="$(pwd)"
+ENVDIR="/var/tmp/chain-scripter"
+MIDPUT="$ENVDIR/midput"
+LOGPUT="$ENVDIR/logput"
+TARPUT="$ENVDIR/tarput"
+
+##########################################################
+
+verify-script ()
+{
+	local script="$1"
+	local script_name="${1%.tmt.cst}"
+	if [ "$script" = "$script_name" ]; then return $FAIL_STATUS; fi
+
+	local tarlist="$(tar f "$script" --list)"
+	local testlist="$(echo -e "chain-maker\nchain-scripter\nCOPYING\nREADME\ntranslate\nverify")"
+	if [ "$tarlist" != "$testlist" ]; then return $FAIL_STATUS; else return $SUCCESS_STATUS; fi
+}
+
+verify-args ()
+{
+	for arg in "$@"
+	do
+		if [ ! -f "$arg" -a ! -f "$HOMEDIR/$arg" ]; then return $FAIL_STATUS; fi
+	done || return $FAIL_STATUS
+
+	return $SUCCESS_STATUS
+}
+
+##########################################################
+
+prepare-env ()
+{
+	local envdir="$1"
+	local script="$2"
+	if [ -d "$envdir" ]; then rm -r "$envdir"; fi
+	mkdir -p "$MIDPUT" "$LOGPUT" "$TARPUT" &&
+	cat "/dev/null" > "$MIDPUT/error.log" &&
+	cat "/dev/null" > "$LOGPUT/verify.log" &&
+	cp "$script" "$envdir" &&
+	return $SUCCESS_STATUS
+
+	return $FAIL_STATUS
+}
+
+##########################################################
+
+run_script ()
+{
+	local run_name="$1"; shift
+	local script="$1"; shift
+	local run_dir="$1"; shift
+
+	cd "$ENVDIR" &&
+	script="$(if [ -f "$script" ]; then echo "$script"; else echo "$HOMEDIR/$script"; fi)" &&
+	tar f "$script" -x "$run_name" &&
+	chmod +x "$run_name" &&
+	cd "$run_dir" &&
+	../"$run_name" "$HOMEDIR" "$@" &&
+	return $SUCCESS_STATUS
+
+	return $FAIL_STATUS
+}
+
+##########################################################
+
+# Note: the extraction will successively embed "tarput" subfolders into each other as the chain progresses.
+
+extract_tar ()
+{
+	cd "$TARPUT" &&
+	for tarcst in "$@"
+	do
+		if [ "$tarcst" != "${tarcst%.cst}" ]
+		then
+			if [ ! -f "$tarcst" ]; then tarcst="$HOMEDIR/$tarcst"; fi
+			if ! tar f "$tarcst" -x --wildcards *.tmt.cst; then return $FAIL_STATUS; fi
+		fi
+	done || return $FAIL_STATUS
+
+	return $SUCCESS_STATUS
+}
+
+create_tar ()
+{
+	local script_name="${1%.tmt.cst}"; shift
+	local tar_name="${script_name##*/}""_$(date +%y-%m-%d-%H%M)"
+
+	cd "$ENVDIR" &&
+	script_name="$(if [ -f "$script_name" ]; then echo "$script_name"; else echo "$HOMEDIR/$script_name"; fi)" &&
+	tar f "$HOMEDIR/$tar_name.cst" -c "${script_name##*/}.tmt.cst" "${TARPUT##*/}" "${LOGPUT##*/}" "${MIDPUT##*/}" &&
+	sha256sum "$HOMEDIR/$tar_name.cst" > "$HOMEDIR/$tar_name.sha256sum" &&
+	return $SUCCESS_STATUS
+
+	return $FAIL_STATUS
+}
+
+finish ()
+{
+	local script="$1"; shift
+
+	extract_tar "$@" &&
+	create_tar "$script" &&
+	return $SUCCESS_STATUS
+
+	return $FAIL_STATUS
+}
+
+##########################################################
+
+chain-scripter ()
+{
+	if [ $# -eq 0 ]; then return $FAIL_STATUS; fi
+	if ! verify-args "$@"; then return $FAIL_STATUS; fi
+
+	local script="$1"; shift
+
+	verify-script "$script" &&
+	prepare-env "$ENVDIR" "$script" &&
+	run_script "translate" "$script" "$MIDPUT" "$@" &&
+	mv "$MIDPUT/error.log" "$LOGPUT" &&
+	run_script "verify" "$script" "$LOGPUT" "$@" &&
+	finish "$script" "$@" &&
+	return $SUCCESS_STATUS
+
+	return $FAIL_STATUS
+}
+
+chain-scripter "$@"
+

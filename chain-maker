@@ -1,0 +1,124 @@
+#!/bin/bash
+#./chain-maker
+#
+#Copyright 2013 Daniel Nikpayuk
+#
+#This file is part of Chain-Scripting-Technology.
+#
+#Chain-Scripting-Technology is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#Chain-Scripting-Technology is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+#of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with Chain-Scripting-Technology. If not, see
+#<http://www.gnu.org/licenses/>.
+
+SUCCESS_STATUS=0
+FAIL_STATUS=1
+
+HOMEDIR="$(pwd)"
+SCRIPTDIR=~/".scripts/usr/"
+SHAREDIR="$SCRIPTDIR/share/chain"
+BINDIR="$SCRIPTDIR/bin"
+ENVDIR="/var/tmp/chain-maker"
+
+##########################################################
+
+verify-chain ()
+{
+	local chain="$1"
+	local lslog="$(ls -1 "$chain")"
+
+	if [ ! -d "$chain" ]; then return $FAIL_STATUS
+	elif [ "$lslog" = "translate" -o "$lslog" = "$(echo -e "translate\nverify")" ]
+	then return $SUCCESS_STATUS; else return $FAIL_STATUS; fi
+}
+
+##########################################################
+
+make-header ()
+{
+	local file="$1"
+	local file_name="${1##*/}"
+	local chain_name="$2"
+	local owner_name="$3"
+	local year_name="$4"
+	local is_script=$5
+	local header="$(if $is_script; then echo "#!/bin/bash\n"; fi)"
+
+	header+="#./$file_name\n"
+	header+="#\n"
+	header+="#Copyright $year_name $owner_name\n"
+	header+="#\n"
+	header+="#This file is part of $chain_name.\n"
+	header+="#\n"
+	header+="#$chain_name is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License\n"
+	header+="#as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n"
+	header+="#\n"
+	header+="#$chain_name is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty\n"
+	header+="#of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.\n"
+	header+="#\n"
+	header+="#You should have received a copy of the GNU General Public License along with $chain_name. If not, see\n"
+	header+="#<http://www.gnu.org/licenses/>.$(if ! $is_script; then echo "\n"; fi)"
+
+	echo -e "$header" > "$file"
+}
+
+##########################################################
+
+prepare-file ()
+{
+	local file="$1"
+	local file_name="${1##*/}"
+	local chain_name="$2"
+	local is_script="$3"
+	local owner_name="Daniel Nikpayuk"
+	local year_name="2013"
+	local l=$(if [ "$(head -n 1 "$file")" != "#!/bin/bash" ]; then echo 1; else echo 2; fi)
+
+	make-header "$ENVDIR/$file_name" "$chain_name" "$owner_name" "$year_name" $is_script
+	tail -n +$l "$file" >> "$ENVDIR/$file_name"
+}
+
+prepare-tar ()
+{
+	local chain="$1"
+	local chain_name="${chain##*/}"
+	local is_script=false
+	local verdir="$(if [ -f "$chain/verify" ]; then echo "$chain"; else echo "$SHAREDIR"; fi)"
+
+	if [ -d "$ENVDIR" ]; then rm -r "$ENVDIR"; fi
+	mkdir -p "$ENVDIR" &&
+	cp "$SHAREDIR/COPYING" "$ENVDIR" &&
+	prepare-file "$SHAREDIR/README" "$chain_name" $is_script &&
+
+	is_script=true &&
+	prepare-file "$BINDIR/chain-maker" "$chain_name" $is_script &&
+	prepare-file "$BINDIR/chain-scripter" "$chain_name" $is_script &&
+	prepare-file "$chain/translate" "$chain_name" $is_script &&
+	prepare-file "$verdir/verify" "$chain_name" $is_script
+}
+
+##########################################################
+
+chain-maker ()
+{
+	if [ $# -eq 0 ]; then return $FAIL_STATUS; fi
+
+	for chain in "$@"
+	do
+		chain="${chain%/}"
+		verify-chain "$chain" &&
+		prepare-tar "$chain" &&
+		cd "$ENVDIR" &&
+		tar f "$HOMEDIR/${chain##*/}.tmt.cst" -c --wildcards * &&
+		return $SUCCESS_STATUS
+
+		return $FAIL_STATUS
+	done || return $FAIL_STATUS
+
+	return $SUCCESS_STATUS
+}
+
+chain-maker "$@"

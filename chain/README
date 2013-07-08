@@ -1,0 +1,118 @@
+#./README
+#
+#Copyright 2013 Daniel Nikpayuk
+#
+#This file is part of Chain-Scripting-Technology.
+#
+#Chain-Scripting-Technology is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+#as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#Chain-Scripting-Technology is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+#of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with Chain-Scripting-Technology. If not, see
+#<http://www.gnu.org/licenses/>.
+
+Nikpayuk Chain Scripting Technology:
+
+This documentation v0.0.2 is a design specification.
+
+A "technology" is here conceptualized as a collection of three spaces: A context space, a semiotic space, and a media space.
+A context space is existential and descriptive in nature. A semiotic space is constructive and prescriptive in nature.
+A media space provides a dynamic; a potential for the interaction between the other two spaces. As such it inherits
+properties of both, though its form inevitably behaves more like the context space than the semiotic one.
+
+The context of this technology is that of one-time translations. The semiotic space is meant to represent this by means
+of script implementations---implementations with respect to a computing operating system. In application, the media space
+is often a chain of many smaller one-time scripts used to break down the complexity of an otherwise larger one-time script.
+Such media is modular and extensible.
+
+Architecture:
+
+This design specification is intended to take into account the imperative and immediate nature created by the desire of "succeeding"
+in a one-time-only translation. Thus, emphasis of---and within---its architecture is placed on error-reduction and error-detection.
+
+Error-reduction:
+
+With this specification, error is intended to be reduced on the part of the metadata: The data produced during the translation
+that is not intended to be part of the content itself nor as a "side-effect". Given that these implementations will occur within
+an operating system, the translations will be stored on a filesystem. As such the translations should ideally be stored
+in a "filesystem neutral" way---such that it is difficult to accidentally corrupt.
+
+Error-detection:
+
+By intention, it is ideal that context, semiotic, and media interactions are logged as much a possible: By doing so, one may afterward
+parse through the final output---and by ones metrics and hermeneutics---verify the quality of the content if the need of dispute arises.
+In cases where it is not possible but desired to create certain logs during the original translation, the output itself should still be
+verifiable with a seperate translation and script. As such, few restrictions are actually made on the nature of the logs.
+
+Structure:
+
+A script as defined within this technology is an uncompressed tar file. There are two varieties: input and output.
+
+Input Scripts:
+
+Input scripts have the extension ".tmt.cst" where "tmt" is short for "template" and "cst" for "chain script technology".
+These input scripts have the following six files within:
+
+	"chain-maker", "chain-scripter", "COPYING", "README", "translate", and "verify".
+
+Input scripts are packaged together by a given software. The source code of such software---under the name "chain-maker"---
+is added to any package it is used to create.
+
+By intent, a given input script will be used to generate an output script. The software to do so is called "chain-scripter"
+and is also added to any package created by the "chain-maker". The "chain-scripter" requires at least one input (the input script)
+as an arguement and must verify all of its input exist as files on the filesystem or return a fail status.
+
+The file "COPYING" provides a copy of "The GNU General Public License".
+
+The "README" is THIS file here, the one being read right NOW, by you. It should contain a general description of this
+Chain Scripting Technology specification.
+
+The file "translate" is the main content of the input script, and is the "workhorse script" used to instruct the one time
+translation intended by the technology. The only specification on what variety of input this file should have is that its
+first arguement is the path location of the working directory of where the script is called from. Such a restriction is
+there to potentially help locate the other input files---if any at all. Otherwise, the remaining arguements (again, if any)
+must be a subset of the "chain-scripter" arguements.
+
+The "verify" file is a script that performs a verification after the translation is complete; it verifies the translated content
+is what it is intended to be. The existence of this file is manditory but there are otherwise no requirements about its content:
+about its metrics or algorithms. It is in fact optional to have it do any verification at all, though it is a recommendation
+of this specification that: If none, then at least that much is explicitly mentioned in the documentation produced.
+
+Output Scripts:
+
+Output scripts have the extension ".cst" with no ".tmt" preceding it---so as to not confuse an input and output script.
+These output scripts have the following directories structure:
+
+	/
+	logput/
+	midput/
+	tarput/
+
+The forward slash by itself is the root directory.
+
+All documentation logs that are made during the translation are put into the "logput" directory. It must include the files:
+
+	"error.log"
+	"verify.log"
+	"historical.log" (optional)
+
+Any errors during the translation are optionally logged in "error.log". The verification is logged in "verify.log".
+Any historical and environmental context such as time and date, versions of the tools used as part of the translation or
+verification etc. are optionally logged in "historical.log". If the historical log explicates the version of every tool
+used it is considered a "strict" form of this technology and is otherwise considered "lax".
+
+The translated content is stored in the "midput" directory. No restrictions are otherwise made on the "midput" directory
+or the translated content. Furthermore, there are no restrictions on the creation of "side-effects". This is to say:
+Data produced that is not part of the "midput" directory or even part of the tar archive itself---data or content produced
+that is not part of the official translation output.
+
+The input script that is necessarily the first arguement of the "chain-scripter" software is itself stored in the
+root directory of the output script. Any other input arguments of "chain-scripter" that are themselves output scripts (.cst)
+must have their own input scripts extracted and put into the "tarput" directory. This directory thus contains the dependency
+record of the translation chains.
+
+Finally, it is recommended a checksum hash is generated for each script, as its existence allows additional probabilistic
+confirmation that the script has not been corrupted by any unintended means.
+
